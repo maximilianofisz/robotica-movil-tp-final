@@ -185,10 +185,6 @@ void build_spline_trajectory(double stepping, std::vector<std::vector<double>>& 
     std::cout << "xb " << xb << " yb " << yb << " thetab " << thetab  << std::endl;
     std::cout << "tin " << initial_time << " tfin " << final_time << std::endl;
 */
-    // curvature parameters
-    double n1 = 5;
-    double n2 = 5;
-    
     // polynomial parameters
 
     /* COMPLETAR LOS PARÁMETROS DE LOS POLINOMIOS */

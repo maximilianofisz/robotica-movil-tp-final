@@ -65,4 +65,55 @@ def generate_launch_description():
                         {'min_landmark_size': 2},
                         {"use_sim_time": True}],
         ),
+
+        # Nodo para logguear lo necesario para las metricas
+        Node(
+            package="robmovil_ekf",
+            executable="logger",
+            name="logger",
+            output="screen",
+            parameters=[{'use_sim_time': True}]
+        ),
+
+        Node(
+            package="lazo_cerrado_ekf",
+            executable="trajectory_follower_cl",
+            name="trajectory_follower_cl",
+            output="screen",
+            parameters=[
+                {'use_sim_time': True},
+                {"goal_selection": "PURSUIT_BASED"}, #FIXED_GOAL, TIME_BASED, PURSUIT_BASED
+                {"fixed_goal_x": float(2.0)},
+                {"fixed_goal_y": float(2.0)},
+                {"fixed_goal_a": float(-0.785)}, # -1/2 * PI
+            ],
+        ),
+
+        # Creamos una trajectoria cuadrada mirando hacia afuera para usar los postes como referencias en EKF
+        Node(
+            package="lazo_abierto",
+            executable="trajectory_generator",
+            name="trajectory_generator",
+            output="screen",
+            parameters=[
+                {'use_sim_time': True},
+                {'trajectory_type': 'spline'}, #sin or spline
+                {"stepping": float(0.1)},
+                {"total_time": float(20.0)},
+                {"amplitude": float(1.0)},
+                {"cycles": float(1.0)},
+                {'spline_waypoints': [
+                    0.0,   0.0,  1.0,   0.0,  
+                    2.5,   1.0,  1.0,   0.0,
+                    5.0,   1.0, 0.0,    0.0,
+                    7.5,  1.0, -1.0,    0.0,
+                    10.0,  0.0, -1.0,     0.0,
+                    12.5, -1.0, -1.0,    0.0,
+                    15.0, -1.0, 0.0,    0.0,
+                    17.5, -1.0,  1.0,    0.0,
+                    20.0,  0.0,  1.0,   0.0
+                ]}
+            ],  
+        ),
     ])
+

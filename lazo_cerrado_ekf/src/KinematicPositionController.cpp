@@ -10,8 +10,7 @@ KinematicPositionController::KinematicPositionController() :
 
     expected_position_pub = this->create_publisher<geometry_msgs::msg::PoseStamped>("/goal_pose", rclcpp::QoS(10));
 
-    current_pos_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("/robot/odometry", rclcpp::QoS(10), std::bind(&KinematicPositionController::getCurrentPoseFromOdometry, this, std::placeholders::_1));
-          
+         
     std::string goal_selection = this->declare_parameter("goal_selection", "TIME_BASED");
     fixed_goal_x_ = this->declare_parameter("fixed_goal_x", 3.0);
     fixed_goal_y_ = this->declare_parameter("fixed_goal_y", 0.0);
@@ -32,17 +31,37 @@ double lineal_interp(const rclcpp::Time& t0, const rclcpp::Time& t1, double y0, 
   return y0 + (t - t0).seconds() * (y1 - y0) / (t1 - t0).seconds();
 }
 
-void KinematicPositionController::getCurrentPoseFromOdometry(const nav_msgs::msg::Odometry& odometry_msg)
+bool KinematicPositionController::updateCurrentPoseFromTF()
 {
-  x = odometry_msg.pose.pose.position.x;
-  y = odometry_msg.pose.pose.position.y;
-  tf2::Quaternion q(odometry_msg.pose.pose.orientation.x,
-                    odometry_msg.pose.pose.orientation.y,
-                    odometry_msg.pose.pose.orientation.z,
-                    odometry_msg.pose.pose.orientation.w);
-  double roll, pitch, yaw;
-  tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-  a = yaw;
+  try
+  {
+    geometry_msgs::msg::TransformStamped tf;
+
+    tf = tfBuffer_.lookupTransform(
+      "map",
+      "base_link_ekf",
+      tf2::TimePointZero);
+
+    x = tf.transform.translation.x;
+    y = tf.transform.translation.y;
+
+    tf2::Quaternion q(
+      tf.transform.rotation.x,
+      tf.transform.rotation.y,
+      tf.transform.rotation.z,
+      tf.transform.rotation.w);
+
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    a = yaw;
+
+    return true;
+  }
+  catch (tf2::TransformException &ex)
+  {
+    RCLCPP_WARN(this->get_logger(), "TF error: %s", ex.what());
+    return false;
+  }
 }
 
 
@@ -52,9 +71,13 @@ void KinematicPositionController::getCurrentPoseFromOdometry(const nav_msgs::msg
 
 bool KinematicPositionController::control(const rclcpp::Time& t, double& vx, double& vy, double& w)
 {
-  // Se obtiene la pose actual publicada por la odometria
-  double current_x, current_y, current_a;
-  current_x = this->x; current_y = this->y; current_a = this->a;
+  // Se obtiene la pose actual de la transformada de EKF
+  if (!updateCurrentPoseFromTF())
+    return false;
+
+  double current_x = x;
+  double current_y = y;
+  double current_a = a;
 
   // Se obtiene la pose objetivo actual a seguir
   double goal_x, goal_y, goal_a;

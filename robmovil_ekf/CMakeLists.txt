@@ -88,6 +88,9 @@ include_directories(
 add_executable(localizer src/localizer_node.cpp src/localizer.cpp src/localizer_ekf.cpp)
 ament_target_dependencies(localizer rclcpp ament_cmake geometry_msgs robmovil_msgs nav_msgs tf2 tf2_ros tf2_geometry_msgs sensor_msgs angles laser kfilter)
 
+add_executable(logger src/logger_node.cpp)
+ament_target_dependencies(logger rclcpp ament_cmake geometry_msgs robmovil_msgs nav_msgs tf2 tf2_ros tf2_geometry_msgs lazo_abierto angles) 
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 #add_dependencies(localizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -97,6 +100,7 @@ ament_target_dependencies(localizer rclcpp ament_cmake geometry_msgs robmovil_ms
 
 install(TARGETS
   localizer
+  logger
   DESTINATION lib/${PROJECT_NAME}
 )
 
